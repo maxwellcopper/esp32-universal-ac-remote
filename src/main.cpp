@@ -35,59 +35,82 @@ uint16_t stateLen   = 0;
 bool     scanMode   = false;
 String   protoName  = "UNKNOWN";
 
-
-
 // ======= FUNCTION PROTO =======
+void sendSignal();
+void processScanResult();
+void processCommand(String cmd);
+void setDefaultAcState();
+void saveToFlash();
+void loadFromFlash();
 void printStatus();
+void printHelp();
 
-// ========== SAVE & LOAD ==========
-void saveToFlash() {
-  prefs.begin("ac", false);
-  prefs.putString("proto",   protoName);
-  prefs.putInt("protocol",   (int)acState.protocol);
-  prefs.putInt("model",      acState.model);
-  prefs.putBool("power",     acState.power);
-  prefs.putFloat("temp",     acState.degrees);
-  prefs.putBool("celsius",   acState.celsius);
-  prefs.putInt("mode",       (int)acState.mode);
-  prefs.putInt("fan",        (int)acState.fanspeed);
-  prefs.putInt("swingv",     (int)acState.swingv);
-  prefs.putInt("swingh",     (int)acState.swingh);
-  prefs.putBool("turbo",     acState.turbo);
-  prefs.putBool("econo",     acState.econo);
-  prefs.putBool("filter",    acState.filter);
-  prefs.putBool("ion",       acState.filter);
-  prefs.putUInt("statelen",  stateLen);
-  if (stateLen > 0)
-    prefs.putBytes("base", baseState, stateLen);
-  prefs.end();
+
+// ========== SETUP ==========
+void setup() {
+  Serial.begin(115200);
+  while (!Serial) delay(50);
+
+  irrecv.setUnknownThreshold(kMinUnknownSize);
+  irrecv.setTolerance(kTolerancePercentage);
+  irrecv.enableIRIn();
+
+  setDefaultAcState();
+  loadFromFlash();
+
+  Serial.println("================================");
+  Serial.println("  ESP32 AC Universal - Simple");
+  Serial.println("================================");
+
+  if (stateLen == 0) {
+    Serial.println("⚠ Belum ada data!");
+    Serial.println("Ketik 'scan' → tekan tombol remote AC");
+  } else {
+    Serial.print("✓ Protocol : "); Serial.println(protoName);
+    Serial.print("✓ Model    : "); Serial.println(acState.model);
+    printHelp();
+  }
+
+  printStatus();
 }
 
-void loadFromFlash() {
-  prefs.begin("ac", true);
-  protoName            = prefs.getString("proto", "UNKNOWN");
-  acState.protocol     = (decode_type_t)prefs.getInt("protocol", (int)decode_type_t::UNKNOWN);
-  acState.model        = prefs.getInt("model", -1);
-  acState.power        = prefs.getBool("power", false);
-  acState.degrees      = prefs.getFloat("temp", 24);
-  acState.celsius      = prefs.getBool("celsius", true);
-  acState.mode         = (stdAc::opmode_t)prefs.getInt("mode", (int)stdAc::opmode_t::kCool);
-  acState.fanspeed     = (stdAc::fanspeed_t)prefs.getInt("fan", (int)stdAc::fanspeed_t::kAuto);
-  acState.swingv       = (stdAc::swingv_t)prefs.getInt("swingv", (int)stdAc::swingv_t::kOff);
-  acState.swingh       = (stdAc::swingh_t)prefs.getInt("swingh", (int)stdAc::swingh_t::kOff);
-  acState.turbo        = prefs.getBool("turbo", false);
-  acState.econo        = prefs.getBool("econo", false);
-  acState.filter       = prefs.getBool("filter", false);
-  acState.light        = false;
-  acState.clean        = false;
-  acState.beep         = false;
-  acState.sleep        = -1;
-  acState.clock        = -1;
-  stateLen             = prefs.getUInt("statelen", 0);
-  if (stateLen > 0)
-    prefs.getBytes("base", baseState, stateLen);
-  prefs.end();
+// ========== LOOP ==========
+void loop() {
+  if (irrecv.decode(&results)) {
+    if (scanMode) {
+      processScanResult();
+    } else {
+      // Sync dari remote asli
+      if (!results.repeat && hasACState(results.decode_type)) {
+        if (results.decode_type == acState.protocol) {
+          Serial.println("\n>>> Remote asli, sync state...");
+          stdAc::state_t s;
+          if (IRAcUtils::decodeToState(&results, &s, nullptr)) {
+            // Sync parameter penting saja
+            acState.power    = s.power;
+            acState.degrees  = s.degrees;
+            acState.mode     = s.mode;
+            acState.fanspeed = s.fanspeed;
+            acState.swingv   = s.swingv;
+            acState.swingh   = s.swingh;
+            Serial.println(IRAcUtils::resultAcToString(&results));
+          }
+        }
+      }
+    }
+    irrecv.resume();
+  }
+
+  if (Serial.available()) {
+    String cmd = Serial.readStringUntil('\n');
+    processCommand(cmd);
+  }
 }
+
+
+
+
+//////////////// FUNCTION SUPPORT /////////////////////
 
 // ========== KIRIM SINYAL ==========
 // IRac.sendAc() handle SEMUA merk otomatis!
@@ -118,42 +141,6 @@ void sendSignal() {
   Serial.println("✓ Terkirim!");
   saveToFlash();
   printStatus();
-}
-
-// ========== PRINT STATUS ==========
-void printStatus() {
-  Serial.println("========== STATUS AC ==========");
-  Serial.print("Protocol : "); Serial.println(protoName);
-  Serial.print("Model    : "); Serial.println(acState.model);
-  Serial.print("Power    : "); Serial.println(acState.power ? "ON" : "OFF");
-  Serial.print("Suhu     : "); Serial.print(acState.degrees); Serial.println(" C");
-  Serial.print("Mode     : "); Serial.println(IRac::opmodeToString(acState.mode));
-  Serial.print("Fan      : "); Serial.println(IRac::fanspeedToString(acState.fanspeed));
-  Serial.print("Swing V  : "); Serial.println(IRac::swingvToString(acState.swingv));
-  Serial.print("Swing H  : "); Serial.println(IRac::swinghToString(acState.swingh));
-  Serial.print("Turbo    : "); Serial.println(acState.turbo ? "ON" : "OFF");
-  Serial.print("Econo    : "); Serial.println(acState.econo ? "ON" : "OFF");
-  Serial.print("Data     : "); Serial.println(stateLen > 0 ? "✓ Siap" : "✗ Belum scan");
-  Serial.println("================================");
-}
-
-// ========== PRINT HELP ==========
-void printHelp() {
-  Serial.println("=========== COMMAND ============");
-  Serial.println("scan             → scan remote");
-  Serial.println("power on/off     → nyala/mati");
-  Serial.println("temp 16-30       → set suhu");
-  Serial.println("mode cool/heat/dry/fan/auto");
-  Serial.println("fan auto/min/low/med/high/max");
-  Serial.println("swingv on/off    → swing vertikal");
-  Serial.println("swingh on/off    → swing horizontal");
-  Serial.println("turbo on/off     → turbo mode");
-  Serial.println("econo on/off     → econo mode");
-  Serial.println("send             → kirim ulang");
-  Serial.println("status           → lihat status");
-  Serial.println("reset            → hapus data");
-  Serial.println("help             → menu ini");
-  Serial.println("================================");
 }
 
 // ========== PROSES SCAN ==========
@@ -299,16 +286,8 @@ void processCommand(String cmd) {
   }
 }
 
-// ========== SETUP ==========
-void setup() {
-  Serial.begin(115200);
-  while (!Serial) delay(50);
 
-  irrecv.setUnknownThreshold(kMinUnknownSize);
-  irrecv.setTolerance(kTolerancePercentage);
-  irrecv.enableIRIn();
-
-  // Init default state
+void setDefaultAcState(){
   acState.protocol = decode_type_t::UNKNOWN;
   acState.model    = -1;
   acState.degrees  = 24;
@@ -325,54 +304,89 @@ void setup() {
   acState.beep     = false;
   acState.sleep    = -1;
   acState.clock    = -1;
-
-  loadFromFlash();
-
-  Serial.println("================================");
-  Serial.println("  ESP32 AC Universal - Simple");
-  Serial.println("================================");
-
-  if (stateLen == 0) {
-    Serial.println("⚠ Belum ada data!");
-    Serial.println("Ketik 'scan' → tekan tombol remote AC");
-  } else {
-    Serial.print("✓ Protocol : "); Serial.println(protoName);
-    Serial.print("✓ Model    : "); Serial.println(acState.model);
-    printHelp();
-  }
-
-  printStatus();
 }
 
-// ========== LOOP ==========
-void loop() {
-  if (irrecv.decode(&results)) {
-    if (scanMode) {
-      processScanResult();
-    } else {
-      // Sync dari remote asli
-      if (!results.repeat && hasACState(results.decode_type)) {
-        if (results.decode_type == acState.protocol) {
-          Serial.println("\n>>> Remote asli, sync state...");
-          stdAc::state_t s;
-          if (IRAcUtils::decodeToState(&results, &s, nullptr)) {
-            // Sync parameter penting saja
-            acState.power    = s.power;
-            acState.degrees  = s.degrees;
-            acState.mode     = s.mode;
-            acState.fanspeed = s.fanspeed;
-            acState.swingv   = s.swingv;
-            acState.swingh   = s.swingh;
-            Serial.println(IRAcUtils::resultAcToString(&results));
-          }
-        }
-      }
-    }
-    irrecv.resume();
-  }
+// ========== SAVE & LOAD ==========
+void saveToFlash() {
+  prefs.begin("ac", false);
+  prefs.putString("proto",   protoName);
+  prefs.putInt("protocol",   (int)acState.protocol);
+  prefs.putInt("model",      acState.model);
+  prefs.putBool("power",     acState.power);
+  prefs.putFloat("temp",     acState.degrees);
+  prefs.putBool("celsius",   acState.celsius);
+  prefs.putInt("mode",       (int)acState.mode);
+  prefs.putInt("fan",        (int)acState.fanspeed);
+  prefs.putInt("swingv",     (int)acState.swingv);
+  prefs.putInt("swingh",     (int)acState.swingh);
+  prefs.putBool("turbo",     acState.turbo);
+  prefs.putBool("econo",     acState.econo);
+  prefs.putBool("filter",    acState.filter);
+  prefs.putBool("ion",       acState.filter);
+  prefs.putUInt("statelen",  stateLen);
+  if (stateLen > 0)
+    prefs.putBytes("base", baseState, stateLen);
+  prefs.end();
+}
 
-  if (Serial.available()) {
-    String cmd = Serial.readStringUntil('\n');
-    processCommand(cmd);
-  }
+void loadFromFlash() {
+  prefs.begin("ac", true);
+  protoName            = prefs.getString("proto", "UNKNOWN");
+  acState.protocol     = (decode_type_t)prefs.getInt("protocol", (int)decode_type_t::UNKNOWN);
+  acState.model        = prefs.getInt("model", -1);
+  acState.power        = prefs.getBool("power", false);
+  acState.degrees      = prefs.getFloat("temp", 24);
+  acState.celsius      = prefs.getBool("celsius", true);
+  acState.mode         = (stdAc::opmode_t)prefs.getInt("mode", (int)stdAc::opmode_t::kCool);
+  acState.fanspeed     = (stdAc::fanspeed_t)prefs.getInt("fan", (int)stdAc::fanspeed_t::kAuto);
+  acState.swingv       = (stdAc::swingv_t)prefs.getInt("swingv", (int)stdAc::swingv_t::kOff);
+  acState.swingh       = (stdAc::swingh_t)prefs.getInt("swingh", (int)stdAc::swingh_t::kOff);
+  acState.turbo        = prefs.getBool("turbo", false);
+  acState.econo        = prefs.getBool("econo", false);
+  acState.filter       = prefs.getBool("filter", false);
+  acState.light        = false;
+  acState.clean        = false;
+  acState.beep         = false;
+  acState.sleep        = -1;
+  acState.clock        = -1;
+  stateLen             = prefs.getUInt("statelen", 0);
+  if (stateLen > 0)
+    prefs.getBytes("base", baseState, stateLen);
+  prefs.end();
+}
+
+// ========== PRINT STATUS ==========
+void printStatus() {
+  Serial.println("========== STATUS AC ==========");
+  Serial.print("Protocol : "); Serial.println(protoName);
+  Serial.print("Model    : "); Serial.println(acState.model);
+  Serial.print("Power    : "); Serial.println(acState.power ? "ON" : "OFF");
+  Serial.print("Suhu     : "); Serial.print(acState.degrees); Serial.println(" C");
+  Serial.print("Mode     : "); Serial.println(IRac::opmodeToString(acState.mode));
+  Serial.print("Fan      : "); Serial.println(IRac::fanspeedToString(acState.fanspeed));
+  Serial.print("Swing V  : "); Serial.println(IRac::swingvToString(acState.swingv));
+  Serial.print("Swing H  : "); Serial.println(IRac::swinghToString(acState.swingh));
+  Serial.print("Turbo    : "); Serial.println(acState.turbo ? "ON" : "OFF");
+  Serial.print("Econo    : "); Serial.println(acState.econo ? "ON" : "OFF");
+  Serial.print("Data     : "); Serial.println(stateLen > 0 ? "✓ Siap" : "✗ Belum scan");
+  Serial.println("================================");
+}
+
+// ========== PRINT HELP ==========
+void printHelp() {
+  Serial.println("=========== COMMAND ============");
+  Serial.println("scan             → scan remote");
+  Serial.println("power on/off     → nyala/mati");
+  Serial.println("temp 16-30       → set suhu");
+  Serial.println("mode cool/heat/dry/fan/auto");
+  Serial.println("fan auto/min/low/med/high/max");
+  Serial.println("swingv on/off    → swing vertikal");
+  Serial.println("swingh on/off    → swing horizontal");
+  Serial.println("turbo on/off     → turbo mode");
+  Serial.println("econo on/off     → econo mode");
+  Serial.println("send             → kirim ulang");
+  Serial.println("status           → lihat status");
+  Serial.println("reset            → hapus data");
+  Serial.println("help             → menu ini");
+  Serial.println("================================");
 }
