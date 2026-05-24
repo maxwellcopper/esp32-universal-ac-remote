@@ -45,7 +45,62 @@ void loadFromFlash();
 void printStatus();
 void printHelp();
 
+#include "sct013.h"
+#define SCT013_PIN     13
 
+// const uint32_t SAMPLE_INTERVAL_US = 1000; 
+// 1000 us = 1 ms = 1000 sample/detik
+
+const uint32_t SAMPLE_INTERVAL_US = 100000; 
+uint32_t lastSampleTime = 0;
+
+sct013_val_s sct013;
+
+void setup()
+{
+    Serial.begin(115200);
+    pinMode(LED_BUILTIN, OUTPUT);
+    sct013.adc_pin = SCT013_PIN;
+
+    analogReadResolution(12); 
+    // ESP32: hasil ADC 0 - 4095
+
+    analogSetPinAttenuation(SCT013_PIN, ADC_11db);
+    // ADC_11db kira-kira untuk range sampai sekitar 3.3V
+}
+
+    int state = 0;
+    uint32_t lastBlink = 0;
+
+void loop()
+{
+  startSamplingCurrent(&sct013);
+    // uint32_t now = micros();
+    uint32_t now = millis();
+
+    // if (now - lastSampleTime >= 10)
+    // {
+    //     lastSampleTime = now;
+
+    //     int adcValue = analogRead(SCT013_PIN);
+
+    //     Serial.println(adcValue);
+    // }
+
+    if ( now - lastBlink >= 1000){
+      lastBlink = now;
+      if(state) state = 0;
+      else state = 1;
+      digitalWrite(LED_BUILTIN, state);
+
+      Serial.print("voltAdcRms : "); Serial.println(sct013.voltAdcRms);
+      Serial.print("watt : "); Serial.println(sct013.powerRms);
+      Serial.print("curr : "); Serial.println(sct013.currRms); Serial.println();
+    }
+}
+
+
+#if 0
 // ========== SETUP ==========
 void setup() {
   Serial.begin(115200);
@@ -107,6 +162,7 @@ void loop() {
   }
 }
 
+#endif
 
 
 
