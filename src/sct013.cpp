@@ -39,6 +39,11 @@ pseudocode :
 
 }
 
+void resetCurrentSamplingValue(sct013_val_s *val){
+    val->cnt = 0;
+    val->sumSquared = 0;
+}
+
 void printCurrent(sct013_val_s *val){
     Serial.print("voltAdcRms : "); Serial.println(val->voltAdcRms);
     Serial.print("watt : "); Serial.println(val->powerRms);

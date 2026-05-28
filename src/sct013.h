@@ -37,3 +37,4 @@ typedef struct{
 void startSamplingCurrent(sct013_val_s *val);
 void init_sct013(sct013_val_s *device, uint16_t adcPin);
 void printCurrent(sct013_val_s *val);
+void resetCurrentSamplingValue(sct013_val_s *val);

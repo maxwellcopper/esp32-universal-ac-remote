@@ -81,7 +81,13 @@ void setup() {
 }
 
 // ========== LOOP ==========
+bool restartSampling = false;
 void loop() {
+  if(restartSampling) {
+    resetCurrentSamplingValue(&sct013);
+    restartSampling = false;
+  }
+
   startSamplingCurrent(&sct013);
 
   if (irrecv.decode(&results)) {
@@ -110,6 +116,7 @@ void loop() {
   }
 
   if (Serial.available()) {
+    restartSampling = true;
     String cmd = Serial.readStringUntil('\n');
     processCommand(cmd);
   }
