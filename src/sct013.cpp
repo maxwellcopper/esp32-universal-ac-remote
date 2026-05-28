@@ -1,20 +1,18 @@
 #include "sct013.h"
 
+void init_sct013(sct013_val_s *device, uint16_t adcPin){
+    device->adc_pin = adcPin;
+#ifdef ADCESP32
+    analogSetPinAttenuation(device->adc_pin, ADC_11db); 
+#endif
+}
 
 void startSamplingCurrent(sct013_val_s *val){
-/*
-pseudocode : 
-- masukin (adcRaw - adcOffset)^2 ke array index *dapetin centered value lalu di squared
-- jika udh 200. valuenya dijumlahin semua lalu dibagi 200 *summing window value then mean n root it 
-- hasilnya diubah ke voltage lalu convert ke current (1A/5V)
-*/
-
 /*
 pseudocode : 
 - bikin millis sampling 1 ms untuk masukin ke sumsquared
 - bikin millis 200ms untuk hitung hasilnya 
 */
-
     uint32_t now = millis();
     int centeredAdc = 0;
 
@@ -35,9 +33,14 @@ pseudocode :
             val->currRms = val->voltAdcRms * SCT013_FACTOR;
             val->powerRms = 220.0f * val->currRms * 0.9f;
         }
-        
         val->sumSquared = 0;
         val->cnt = 0;
     }
 
+}
+
+void printCurrent(sct013_val_s *val){
+    Serial.print("voltAdcRms : "); Serial.println(val->voltAdcRms);
+    Serial.print("watt : "); Serial.println(val->powerRms);
+    Serial.print("curr : "); Serial.println(val->currRms); Serial.println();
 }
