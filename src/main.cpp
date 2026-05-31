@@ -1,6 +1,6 @@
 #include <WiFi.h>
 #include <HTTPClient.h>
-#include "myHttpHandler.h"
+#include "httpHandler.h"
 #include "sct013.h"
 
 //////WIFI CONFIG
@@ -25,6 +25,7 @@ int isOn = 0;
 
 void setup()
 {
+  pinMode(LED_BUILTIN, OUTPUT);
   Serial.begin(115200);
   delay(1000);
 

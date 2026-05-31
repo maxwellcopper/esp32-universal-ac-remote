@@ -1,5 +1,5 @@
-#ifndef __MY_HTTP_HANDLER_H__
-#define __MY_HTTP_HANDLER_H__
+#ifndef __HTTP_HANDLER_H__
+#define __HTTP_HANDLER_H__
 
 #include <WiFi.h>
 #include <HTTPClient.h>
