@@ -1,3 +1,6 @@
+#ifndef __MY_SCT013_H__
+#define __MY_SCT013_H__
+
 #include "Arduino.h"
 #include "math.h"
 
@@ -14,6 +17,7 @@
 #define SCT013_FACTOR  5 //1V/5A
 
 #define SAMPLING_WINDOW_MS         200
+#define MAX_BLOCKING_ALLOWED_MS    50
 #define MAX_SAMPLING_IDX           SAMPLING_WINDOW_MS - 1
 #define SAMPLING_INTERVAL_MS       1
 #define SCT013_ADC_OFFSET          2900
@@ -38,3 +42,5 @@ void startSamplingCurrent(sct013_val_s *val);
 void init_sct013(sct013_val_s *device, uint16_t adcPin);
 void printCurrent(sct013_val_s *val);
 void resetCurrentSamplingValue(sct013_val_s *val);
+
+#endif

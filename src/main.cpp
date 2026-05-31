@@ -1,3 +1,127 @@
+#include <WiFi.h>
+#include <HTTPClient.h>
+#include "myHttpHandler.h"
+#include "sct013.h"
+
+//////WIFI CONFIG
+const char* WIFI_SSID     = "ANNISA";
+const char* WIFI_PASSWORD = "annisa123";
+
+////// function proto
+void setupWiFi(const char*wifiName, const char*wifiPw);
+
+////// global var
+#define SCT013_PIN     32
+sct013_val_s sct013;
+httpPostStatusHandler_s postStatus;
+httpPostCurrentHandler_s postCurrent;
+
+uint32_t lastPostStatus = 0;
+uint32_t lastPostCurrent = 0;
+uint32_t lastBlinking = 0;
+uint32_t lastSampling = 0;
+uint32_t loopDuration = 0;
+int isOn = 0;
+
+void setup()
+{
+  Serial.begin(115200);
+  delay(1000);
+
+  setupWiFi(WIFI_SSID, WIFI_PASSWORD);
+  init_sct013(&sct013, SCT013_PIN);
+  postCurrent.init("http://192.168.1.7:3000/current", &sct013);
+  postStatus.init("http://192.168.1.7:3000/status");
+}
+
+void loop()
+{
+  unsigned long now = millis();
+  startSamplingCurrent(&sct013); //update current value per 200mS    
+
+  if (now - lastPostStatus >= 5000) { //sending per 5sec
+    lastPostStatus = now;
+    postStatus.startSend();
+  }
+
+  if(now - lastPostCurrent >= 2000) { //sending per 2sec
+    lastPostCurrent = now;
+    postCurrent.startSend();
+  }
+
+  if(now - lastBlinking >=500){
+    lastBlinking = now;
+    digitalWrite(LED_BUILTIN, isOn);
+    isOn = !isOn;
+  }
+
+  loopDuration = millis() - now;
+  if(loopDuration >= MAX_BLOCKING_ALLOWED_MS) resetCurrentSamplingValue(&sct013);
+}
+
+
+void setupWiFi(const char*wifiName, const char*wifiPw){
+  WiFi.begin(wifiName, wifiPw);
+
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+
+  Serial.println("\nWiFi connected!");
+  Serial.print("IP Addr: ");
+  Serial.println(WiFi.localIP());
+}
+
+
+// ===============================
+// Send Current Data to Server
+// ===============================
+#if 0
+void sendCurrentToServer(float current)
+{
+  if (WiFi.status() != WL_CONNECTED) { //check wifi connection
+    Serial.println("WiFi not connected. Skip sending data.");
+    return; 
+  }
+
+  HTTPClient http;
+
+  Serial.println();
+  Serial.println("Sending current data to server...");
+
+  http.begin(SERVER_URL); //specify url server address
+  http.addHeader("Content-Type", "application/json"); //tell server, we will send json data 
+
+  String payload = "{";
+  payload += "\"device_id\":\"ir_remote_001\",";
+  payload += "\"current\":";
+  payload += String(current, 2);
+  payload += "}";
+
+  Serial.print("Payload: ");
+  Serial.println(payload);
+
+  int httpResponseCode = http.POST(payload); //send payload with POST method 
+
+  Serial.print("HTTP response code: ");
+  Serial.println(httpResponseCode); //get http response 
+
+  if (httpResponseCode > 0) { //if response code 200(Success), get response messej from server 
+    String response = http.getString();
+
+    Serial.println("Server response:");
+    Serial.println(response);
+  } else {
+    Serial.print("HTTP POST failed. Error: ");
+    Serial.println(http.errorToString(httpResponseCode));
+  }
+
+  http.end(); //end http communication 
+}
+#endif
+
+#if 0 //original program
 #include <Arduino.h>
 #include <IRrecv.h>
 #include <IRsend.h>
@@ -402,3 +526,5 @@ void printHelp() {
   Serial.println("help             → menu ini");
   Serial.println("================================");
 }
+
+#endif
