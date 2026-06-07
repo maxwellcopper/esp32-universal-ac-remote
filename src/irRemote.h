@@ -7,5 +7,9 @@
 void irRemoteInit();
 void irRemoteLoop();
 void irRemoteProcessCommand(String cmd);
+void irRemoteScan();
+bool isScanMode();
+const stdAc::state_t* irRemotegetAcState();
+const String* irRemotegetProtoName();
 
 #endif

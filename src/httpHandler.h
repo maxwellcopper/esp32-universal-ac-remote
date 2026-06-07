@@ -5,24 +5,25 @@
 #include <HTTPClient.h>
 #include <ArduinoJson.h>
 #include <sct013.h>
+#include <IRrecv.h>
+#include <IRsend.h>
+#include <IRac.h>
 #define FW_VERSION      "1.0.0"
 #define DEVICE_ID       "IR_01"
 
 
-typedef struct{
+struct httpPostStatusHandler_s{
+    const stdAc::state_t *p_acState = nullptr;
+    const String* p_protoName = nullptr;
     const char* urlAddr;
     uint32_t last_cmd_id;
-    bool ac_power;
-    float temp;
-    uint8_t mode;
-    uint8_t fan;
-
-    void init(const char* url);
+    
+    void init(const char* url, const stdAc::state_t* acState, const String* protoName);
     void startSend();
     void buildJsonPayload(String &payloadJson);
-}httpPostStatusHandler_s;
+};
 
-typedef struct{
+struct httpPostCurrentHandler_s{
     const char* urlAddr;
     bool ac_power;
     sct013_val_s* p_val;
@@ -30,7 +31,7 @@ typedef struct{
     void init(const char* url, sct013_val_s *currInstance);
     void startSend();
     void buildJsonPayload(String &payloadJson);
-}httpPostCurrentHandler_s;
+};
 
 
 //common function

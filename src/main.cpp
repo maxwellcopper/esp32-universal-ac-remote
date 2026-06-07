@@ -2,7 +2,7 @@
 #include <HTTPClient.h>
 #include "httpHandler.h"
 #include "sct013.h"
-
+#include "irRemote.h"
 //////WIFI CONFIG
 const char* WIFI_SSID     = "ANNISA";
 const char* WIFI_PASSWORD = "annisa123";
@@ -22,6 +22,7 @@ uint32_t lastBlinking = 0;
 uint32_t lastSampling = 0;
 uint32_t loopDuration = 0;
 int isOn = 0;
+#define PROTOCOL_LOADED   1
 
 void setup()
 {
@@ -31,14 +32,20 @@ void setup()
 
   setupWiFi(WIFI_SSID, WIFI_PASSWORD);
   init_sct013(&sct013, SCT013_PIN);
+  irRemoteInit();
+
   postCurrent.init("http://192.168.1.7:3000/current", &sct013);
-  postStatus.init("http://192.168.1.7:3000/status");
+  postStatus.init("http://192.168.1.7:3000/status", irRemotegetAcState(), irRemotegetProtoName());
 }
 
 void loop()
 {
   unsigned long now = millis();
   startSamplingCurrent(&sct013); //update current value per 200mS    
+
+  if(isScanMode()){
+    irRemoteScan();
+  }
 
   if (now - lastPostStatus >= 5000) { //sending per 5sec
     lastPostStatus = now;
@@ -58,6 +65,11 @@ void loop()
 
   loopDuration = millis() - now;
   if(loopDuration >= MAX_BLOCKING_ALLOWED_MS) resetCurrentSamplingValue(&sct013);
+
+  if (Serial.available()) { //serial command process
+    String cmd = Serial.readStringUntil('\n');
+    irRemoteProcessCommand(cmd);
+  }
 }
 
 

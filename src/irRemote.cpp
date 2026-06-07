@@ -46,6 +46,7 @@ struct IrRemoteHandler {
   void init();
   void loop();
   void processCommand(String cmd);
+  void startScan();
 
 private:
   void sendSignal();
@@ -65,27 +66,29 @@ static IrRemoteHandler irRemote(IR_RECV_PIN, IR_SEND_PIN);
 void irRemoteInit() { irRemote.init();}
 void irRemoteLoop() { irRemote.loop();}
 void irRemoteProcessCommand(String cmd) { irRemote.processCommand(cmd);}
+bool isScanMode() { return irRemote.scanMode;}
+void irRemoteScan() { irRemote.startScan();}
+const stdAc::state_t* irRemotegetAcState() { return &irRemote.acState;}
+const String* irRemotegetProtoName() { return &irRemote.protoName;}
 
 //struct method 
 void IrRemoteHandler::init() {
-  irrecv.setUnknownThreshold(kMinUnknownSize);
+//   irrecv.setUnknownThreshold(kMinUnknownSize);
   irrecv.setTolerance(kTolerancePercentage);
   irrecv.enableIRIn();
 
   setDefaultAcState();
   loadFromFlash();
 
-  Serial.println("================================");
-  Serial.println("  ESP32 AC Universal - Simple");
-  Serial.println("================================");
-
   if (stateLen == 0) {
-    Serial.println("⚠ Belum ada data!");
-    Serial.println("Ketik 'scan' → tekan tombol remote AC");
-  } else {
-    Serial.print("✓ Protocol : ");
+    scanMode = true;
+    Serial.println("no irData");
+  } 
+  else {
+    scanMode = false;
+    Serial.print("protocol :");
     Serial.println(protoName);
-    Serial.print("✓ Model    : ");
+    Serial.print("model :");
     Serial.println(acState.model);
     printHelp();
   }
@@ -93,6 +96,8 @@ void IrRemoteHandler::init() {
   printStatus();
 }
 
+
+#if 0 //original
 void IrRemoteHandler::loop() {
   if (irrecv.decode(&results)) {
     if (scanMode) {
@@ -104,7 +109,8 @@ void IrRemoteHandler::loop() {
 
           stdAc::state_t s;
           if (IRAcUtils::decodeToState(&results, &s, nullptr)) {
-            acState.power    = s.power;
+            acState.power    = 
+            s.power;
             acState.degrees  = s.degrees;
             acState.mode     = s.mode;
             acState.fanspeed = s.fanspeed;
@@ -120,15 +126,23 @@ void IrRemoteHandler::loop() {
     irrecv.resume();
   }
 }
+#endif
 
 
+void IrRemoteHandler::startScan() {
+    if (irrecv.decode(&results)){
+        processScanResult();    
+    }
+
+    irrecv.resume(); 
+}
 
 ///////////////////////////////////////////////////////// ///////////////////////////////////////////
 
 
 void IrRemoteHandler::sendSignal() {
     if (acState.protocol == decode_type_t::UNKNOWN || stateLen == 0) {
-    Serial.println("❌ Belum scan! Ketik 'scan'");
+    Serial.println("err: ss1");
     return;
   }
   if (!ac.isProtocolSupported(acState.protocol)) {
@@ -139,9 +153,9 @@ void IrRemoteHandler::sendSignal() {
   Serial.print("Mengirim ["); Serial.print(protoName);
   Serial.print("] P="); Serial.print(acState.power ? "ON" : "OFF");
   Serial.print(" T="); Serial.print(acState.degrees);
-  Serial.print(" M="); Serial.print(IRac::opmodeToString(acState.mode));
-  Serial.print(" F="); Serial.print(IRac::fanspeedToString(acState.fanspeed));
-  Serial.print(" SV="); Serial.println(IRac::swingvToString(acState.swingv));
+//   Serial.print(" M="); Serial.print(IRac::opmodeToString(acState.mode));
+//   Serial.print(" F="); Serial.print(IRac::fanspeedToString(acState.fanspeed));
+//   Serial.print(" SV="); Serial.println(IRac::swingvToString(acState.swingv));
 
   // Kirim - IRac otomatis handle checksum & format semua merk
   stdAc::state_t* prev = prevStateValid ? &acPrevState : nullptr;
@@ -162,6 +176,7 @@ void IrRemoteHandler::processScanResult() {
 
   decode_type_t proto = results.decode_type;
 
+#if 0 //makan flash mayan gede 
   // Output dump
   uint32_t now = millis();
   Serial.printf("\nTimestamp : %06u.%03u\n", now / 1000, now % 1000);
@@ -172,7 +187,7 @@ void IrRemoteHandler::processScanResult() {
   if (desc.length()) Serial.println("Mesg Desc.: " + desc);
   Serial.println(resultToSourceCode(&results));
   Serial.println();
-
+#endif
   if (!hasACState(proto)) {
     Serial.println("⚠ Bukan AC protocol! Coba lagi...");
     return;
@@ -213,6 +228,8 @@ void IrRemoteHandler::processScanResult() {
   Serial.println("✓ Model    : " + String(acState.model));
   printHelp();
   printStatus();
+  ESP.restart(); //restart after get right remote 
+
 }
 
 // ========== PROSES COMMAND ==========

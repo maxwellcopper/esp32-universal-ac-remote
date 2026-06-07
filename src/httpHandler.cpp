@@ -1,7 +1,12 @@
 #include <httpHandler.h>
 
 ///// POST STATUS HANDLER ///////
-void httpPostStatusHandler_s::init(const char* url){
+void httpPostStatusHandler_s::init(const char* url, const stdAc::state_t* acState, 
+const String* protoName){
+    if (acState == nullptr || protoName) { Serial.println("err : nullptr on statusHandler"); while(1);};
+
+    p_protoName = protoName;
+    p_acState = acState;
     urlAddr = url;
 }
 
@@ -17,19 +22,23 @@ void httpPostStatusHandler_s::buildJsonPayload(String &payloadJson){
     JsonDocument doc; 
 
     doc["id"] = DEVICE_ID;
-    doc["lastCmdId"] = last_cmd_id;
+    doc["lastCmdId"] = last_cmd_id; //kekny gaperlu
     doc["ip"] = WiFi.localIP().toString();
     doc["uptimeMs"] = millis();
     doc["fwVer"] = FW_VERSION;
     doc["freeHeap"] = ESP.getFreeHeap();
-    doc["acPower"] = ac_power;
-    doc["temp"] = temp;
-    doc["mode"] = mode;
-    doc["fan"] = fan;
+    doc["protocol"] = *p_protoName;
+    doc["power"] = p_acState->power;
+    doc["temp"] = p_acState->degrees;
+    // doc["mode"] = IRac::opmodeToString(p_acState->mode);
+    // doc["fan"] = IRac::fanspeedToString(p_acState->fanspeed);
+    // doc["swing"] = IRac::swingvToString(p_acState->swingv);
     
     payloadJson = "";
     serializeJson(doc, payloadJson);    
 }
+
+
 
 ///// POST CURRENT HANDLER ///////
 void httpPostCurrentHandler_s::init(const char* url, sct013_val_s *currentInstance){
