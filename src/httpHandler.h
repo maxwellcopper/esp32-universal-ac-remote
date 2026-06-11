@@ -15,26 +15,38 @@
 struct httpPostStatusHandler_s{
     const stdAc::state_t *p_acState = nullptr;
     const String* p_protoName = nullptr;
-    const char* urlAddr;
+    String urlAddr;
     uint32_t last_cmd_id;
     
-    void init(const char* url, const stdAc::state_t* acState, const String* protoName);
+    void init(const String& url, const stdAc::state_t* acState, const String* protoName);
     void startSend();
     void buildJsonPayload(String &payloadJson);
 };
 
 struct httpPostCurrentHandler_s{
-    const char* urlAddr;
+    String urlAddr;
     bool ac_power;
     sct013_val_s* p_val;
 
-    void init(const char* url, sct013_val_s *currInstance);
+    void init(const String&baseUrl, sct013_val_s *currentInstance);
     void startSend();
     void buildJsonPayload(String &payloadJson);
 };
 
+typedef struct {
+    String urlAddr;
+    stdAc::state_t* p_acState;
+    const String* p_protoName;
+    uint32_t last_cmd_id;
+
+    void init(const String& baseUrl, stdAc::state_t* acState, const String* protoName);
+    bool checkCommand();
+    bool parseCommandJson(const String& payloadJson);
+} httpGetCommandHandler_s;
+
 
 //common function
-int sendJsonPost(const char*url, const String &payloadJson);
+int sendJsonPost(const String &url, const String &payloadJson);
+int sendJsonGet(const String& url, String& responseJson);
 
 #endif

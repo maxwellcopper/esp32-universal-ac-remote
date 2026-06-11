@@ -47,9 +47,9 @@ struct IrRemoteHandler {
   void loop();
   void processCommand(String cmd);
   void startScan();
+  void sendSignal();
 
 private:
-  void sendSignal();
   void processScanResult();
   void setDefaultAcState();
   void resetConfig();
@@ -68,7 +68,9 @@ void irRemoteLoop() { irRemote.loop();}
 void irRemoteProcessCommand(String cmd) { irRemote.processCommand(cmd);}
 bool isScanMode() { return irRemote.scanMode;}
 void irRemoteScan() { irRemote.startScan();}
-const stdAc::state_t* irRemotegetAcState() { return &irRemote.acState;}
+void irRemoteSendSignal() { irRemote.sendSignal();}
+
+stdAc::state_t* irRemotegetAcState() { return &irRemote.acState;}
 const String* irRemotegetProtoName() { return &irRemote.protoName;}
 
 //struct method 
@@ -153,9 +155,9 @@ void IrRemoteHandler::sendSignal() {
   Serial.print("Mengirim ["); Serial.print(protoName);
   Serial.print("] P="); Serial.print(acState.power ? "ON" : "OFF");
   Serial.print(" T="); Serial.print(acState.degrees);
-//   Serial.print(" M="); Serial.print(IRac::opmodeToString(acState.mode));
-//   Serial.print(" F="); Serial.print(IRac::fanspeedToString(acState.fanspeed));
-//   Serial.print(" SV="); Serial.println(IRac::swingvToString(acState.swingv));
+  Serial.print(" M="); Serial.print(IRac::opmodeToString(acState.mode));
+  Serial.print(" F="); Serial.print(IRac::fanspeedToString(acState.fanspeed));
+  Serial.print(" SV="); Serial.println(IRac::swingvToString(acState.swingv));
 
   // Kirim - IRac otomatis handle checksum & format semua merk
   stdAc::state_t* prev = prevStateValid ? &acPrevState : nullptr;

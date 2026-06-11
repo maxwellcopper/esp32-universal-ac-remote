@@ -3,22 +3,19 @@
 #include "httpHandler.h"
 #include "sct013.h"
 #include "irRemote.h"
-//////WIFI CONFIG
-const char* WIFI_SSID     = "ANNISA";
-const char* WIFI_PASSWORD = "annisa123";
-
-////// function proto
-void setupWiFi(const char*wifiName, const char*wifiPw);
+#include "wifiManager.h"
 
 ////// global var
 #define SCT013_PIN     32
 sct013_val_s sct013;
 httpPostStatusHandler_s postStatus;
 httpPostCurrentHandler_s postCurrent;
+httpGetCommandHandler_s getCommand;
 
 uint32_t lastPostStatus = 0;
 uint32_t lastPostCurrent = 0;
 uint32_t lastBlinking = 0;
+uint32_t lastGetCommand = 0;
 uint32_t lastSampling = 0;
 uint32_t loopDuration = 0;
 int isOn = 0;
@@ -30,18 +27,23 @@ void setup()
   Serial.begin(115200);
   delay(1000);
 
-  setupWiFi(WIFI_SSID, WIFI_PASSWORD);
+  wifiManager.begin();
+  Serial.println("done setup");
+
   init_sct013(&sct013, SCT013_PIN);
   irRemoteInit();
 
-  postCurrent.init("http://192.168.1.7:3000/current", &sct013);
-  postStatus.init("http://192.168.1.7:3000/status", irRemotegetAcState(), irRemotegetProtoName());
+  postCurrent.init(wifiManager.getServerBaseUrl(), &sct013);
+  postStatus.init(wifiManager.getServerBaseUrl(), irRemotegetAcState(), irRemotegetProtoName());
+  getCommand.init(wifiManager.getServerBaseUrl(), irRemotegetAcState(), irRemotegetProtoName());
 }
 
 void loop()
 {
+  wifiManager.loop();
   unsigned long now = millis();
   startSamplingCurrent(&sct013); //update current value per 200mS    
+
 
   if(isScanMode()){
     irRemoteScan();
@@ -57,6 +59,15 @@ void loop()
     postCurrent.startSend();
   }
 
+  if (now - lastGetCommand >= 10000) { //every 10sec get command 
+    lastGetCommand = now;
+    
+  if (getCommand.checkCommand()){
+      postStatus.last_cmd_id = getCommand.last_cmd_id;
+      irRemoteSendSignal();
+    } 
+  }
+
   if(now - lastBlinking >=500){
     lastBlinking = now;
     digitalWrite(LED_BUILTIN, isOn);
@@ -70,20 +81,6 @@ void loop()
     String cmd = Serial.readStringUntil('\n');
     irRemoteProcessCommand(cmd);
   }
-}
-
-
-void setupWiFi(const char*wifiName, const char*wifiPw){
-  WiFi.begin(wifiName, wifiPw);
-
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    Serial.print(".");
-  }
-
-  Serial.println("\nWiFi connected!");
-  Serial.print("IP Addr: ");
-  Serial.println(WiFi.localIP());
 }
 
 
