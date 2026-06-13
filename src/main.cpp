@@ -29,6 +29,7 @@ void setup()
 
   wifiManager.begin();
   Serial.println("done setup");
+  Serial.print("url : "); Serial.println(wifiManager.getServerBaseUrl());
 
   init_sct013(&sct013, SCT013_PIN);
   irRemoteInit();
@@ -36,6 +37,7 @@ void setup()
   postCurrent.init(wifiManager.getServerBaseUrl(), &sct013);
   postStatus.init(wifiManager.getServerBaseUrl(), irRemotegetAcState(), irRemotegetProtoName());
   getCommand.init(wifiManager.getServerBaseUrl(), irRemotegetAcState(), irRemotegetProtoName());
+
 }
 
 void loop()
@@ -49,17 +51,18 @@ void loop()
     irRemoteScan();
   }
 
-  if (now - lastPostStatus >= 5000) { //sending per 5sec
+  if (now - lastPostStatus >= 5000 && !(wifiManager.isApMode()) ) { //sending per 5sec
     lastPostStatus = now;
     postStatus.startSend();
   }
 
-  if(now - lastPostCurrent >= 2000) { //sending per 2sec
+  if(now - lastPostCurrent >= 2000 && !(wifiManager.isApMode()) ) { //sending per 2sec
     lastPostCurrent = now;
     postCurrent.startSend();
+    Serial.printf("heap=%u\n", ESP.getFreeHeap());
   }
 
-  if (now - lastGetCommand >= 10000) { //every 10sec get command 
+  if (now - lastGetCommand >= 10000 && !(wifiManager.isApMode()) ) { //every 10sec get command 
     lastGetCommand = now;
     
   if (getCommand.checkCommand()){
@@ -80,6 +83,7 @@ void loop()
   if (Serial.available()) { //serial command process
     String cmd = Serial.readStringUntil('\n');
     irRemoteProcessCommand(cmd);
+
   }
 }
 

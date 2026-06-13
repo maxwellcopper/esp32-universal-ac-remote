@@ -39,10 +39,10 @@ void WifiManagerHandler::begin() {
 }
 
 void WifiManagerHandler::loop() {
-  if (apMode) {
-    dns.processNextRequest();
-    server.handleClient();
-  }
+    if (apMode) {
+        dns.processNextRequest();
+        server.handleClient();
+      }
 }
 
 void WifiManagerHandler::loadConfig() {

@@ -6,6 +6,10 @@
 #include <IRutils.h>
 #include <Preferences.h>
 #include "irRemote.h"
+#include "wifiManager.h"
+
+//extern var 
+extern WifiManagerHandler wifiManager;
 
 // ========== PIN ==========
 #define IR_RECV_PIN  15
@@ -298,9 +302,9 @@ void IrRemoteHandler::processCommand(String cmd) {
     resetConfig();
     Serial.println("✓ Reset! Ketik 'scan'");
 
-  } else {
-    Serial.println("Command tidak dikenal. Ketik 'help'");
-  }
+  } else if ( c == "wifi reset") wifiManager.resetWifi();
+
+  else Serial.println("Command tidak dikenal. Ketik 'help'");
 }
 
 
