@@ -35,7 +35,7 @@ void httpPostStatusHandler_s::startSend(){
     buildJsonPayload(dataJson);
 
     int ret = sendJsonPost(urlAddr, dataJson);
-    Serial.print("post status ret: "); Serial.println(ret); //get http response 
+    // Serial.print("post status ret: "); Serial.println(ret); //get http response 
 }
 
 void httpPostStatusHandler_s::buildJsonPayload(String &payloadJson){
@@ -48,12 +48,16 @@ void httpPostStatusHandler_s::buildJsonPayload(String &payloadJson){
     doc["fwVer"] = FW_VERSION;
     doc["freeHeap"] = ESP.getFreeHeap();
     doc["protocol"] = *p_protoName;
-    doc["power"] = p_acState->power;
+    doc["P"] = p_acState->power;
     doc["temp"] = p_acState->degrees;
-    doc["mode"] = IRac::opmodeToString(p_acState->mode);
-    doc["fan"] = IRac::fanspeedToString(p_acState->fanspeed);
-    doc["swing"] = IRac::swingvToString(p_acState->swingv);
+    // doc["mode"] = IRac::opmodeToString(p_acState->mode);
+    // doc["fan"] = IRac::fanspeedToString(p_acState->fanspeed);
+    // doc["swing"] = IRac::swingvToString(p_acState->swingv);
+    doc["mode"] = (int)p_acState->mode;
+    doc["fan"] = (int)p_acState->fanspeed;
+    doc["swing"] = (int)p_acState->swingv;
     
+
     payloadJson = "";
     serializeJson(doc, payloadJson);    
 }
@@ -72,7 +76,7 @@ void httpPostCurrentHandler_s::startSend(){
     buildJsonPayload(dataJson);
 
     int ret = sendJsonPost(urlAddr, dataJson);
-    Serial.print("post current ret: "); Serial.println(ret); //get http response 
+    // Serial.print("post current ret: "); Serial.println(ret); //get http response 
 }
 
 
@@ -171,11 +175,14 @@ bool httpGetCommandHandler_s::parseCommandJson(const String& payloadJson) {
     Serial.print(" T=");
     Serial.print(p_acState->degrees);
     Serial.print(" M=");
-    Serial.print(IRac::opmodeToString(p_acState->mode));
+    // Serial.print(IRac::opmodeToString(p_acState->mode));
+    Serial.print((int)p_acState->mode);
     Serial.print(" F=");
-    Serial.print(IRac::fanspeedToString(p_acState->fanspeed));
+    // Serial.print(IRac::fanspeedToString(p_acState->fanspeed));
+    Serial.print((int)p_acState->fanspeed);
     Serial.print(" SV=");
-    Serial.println(IRac::swingvToString(p_acState->swingv));
+    // Serial.println(IRac::swingvToString(p_acState->swingv));
+    Serial.println((int)p_acState->swingv);
 
     return true;
 }
@@ -184,7 +191,7 @@ bool httpGetCommandHandler_s::parseCommandJson(const String& payloadJson) {
 
 int sendJsonPost(const String&url, const String &payloadJson){
     if (WiFi.status() != WL_CONNECTED) { //check wifi connection
-        return -1; 
+        return -1;  
     }
     
     HTTPClient http;

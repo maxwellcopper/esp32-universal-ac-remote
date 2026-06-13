@@ -38,11 +38,18 @@ void WifiManagerHandler::begin() {
   }
 }
 
+// void WifiManagerHandler::loop() {
+//     if (apMode) {
+//         dns.processNextRequest();
+//         server.handleClient();
+//       }
+// }
+
 void WifiManagerHandler::loop() {
-    if (apMode) {
+    // if (apMode) {
         dns.processNextRequest();
         server.handleClient();
-      }
+      // }
 }
 
 void WifiManagerHandler::loadConfig() {

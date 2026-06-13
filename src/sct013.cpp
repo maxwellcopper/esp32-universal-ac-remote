@@ -1,5 +1,7 @@
 #include "sct013.h"
 
+extern uint32_t currCnt;
+
 void init_sct013(sct013_val_s *device, uint16_t adcPin){
     device->adc_pin = adcPin;
 #ifdef ADCESP32
@@ -28,6 +30,7 @@ pseudocode :
         val->lastUpdateTime = now;
 
         if(val->cnt > 0){
+            currCnt++; //remove later 
             val->adcRms = sqrt(val->sumSquared / val->cnt);
             val->voltAdcRms = (val->adcRms * ADC_VOLTAGE_RANGE) / MAX_VAL_ADC;
             float tempCurrRms = val->voltAdcRms * SCT013_FACTOR;

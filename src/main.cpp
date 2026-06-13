@@ -40,9 +40,12 @@ void setup()
 
 }
 
+void wifiManager_task();
+uint32_t currCnt = 0;
+
 void loop()
 {
-  wifiManager.loop();
+  wifiManager_task();
   unsigned long now = millis();
   startSamplingCurrent(&sct013); //update current value per 200mS    
 
@@ -51,24 +54,23 @@ void loop()
     irRemoteScan();
   }
 
-  if (now - lastPostStatus >= 5000 && !(wifiManager.isApMode()) ) { //sending per 5sec
+  if (now - lastPostStatus >= 5000) { //sending per 5sec
     lastPostStatus = now;
     postStatus.startSend();
   }
 
-  if(now - lastPostCurrent >= 2000 && !(wifiManager.isApMode()) ) { //sending per 2sec
+  if(now - lastPostCurrent >= 2000) { //sending per 2sec
     lastPostCurrent = now;
     postCurrent.startSend();
-    Serial.printf("heap=%u\n", ESP.getFreeHeap());
+    // Serial.printf("heap=%u\n", ESP.getFreeHeap());
   }
 
-  if (now - lastGetCommand >= 10000 && !(wifiManager.isApMode()) ) { //every 10sec get command 
-    lastGetCommand = now;
-    
-  if (getCommand.checkCommand()){
-      postStatus.last_cmd_id = getCommand.last_cmd_id;
-      irRemoteSendSignal();
-    } 
+  if (now - lastGetCommand >= 10000) { //every 10sec get command 
+    lastGetCommand = now;    
+    if (getCommand.checkCommand()){
+        postStatus.last_cmd_id = getCommand.last_cmd_id;
+        irRemoteSendSignal();
+      } 
   }
 
   if(now - lastBlinking >=500){
@@ -78,7 +80,11 @@ void loop()
   }
 
   loopDuration = millis() - now;
-  if(loopDuration >= MAX_BLOCKING_ALLOWED_MS) resetCurrentSamplingValue(&sct013);
+  if(loopDuration >= MAX_BLOCKING_ALLOWED_MS) {
+    // Serial.print("before reset:"); Serial.println(currCnt);
+    currCnt = 0;
+    resetCurrentSamplingValue(&sct013);
+  }
 
   if (Serial.available()) { //serial command process
     String cmd = Serial.readStringUntil('\n');
@@ -87,6 +93,19 @@ void loop()
   }
 }
 
+
+void wifiManager_task(){
+  if(wifiManager.isApMode()){
+    while(1){
+      wifiManager.loop();
+      if(millis() - lastBlinking >= 250){
+        lastBlinking = millis();
+        digitalWrite(LED_BUILTIN, isOn);
+        isOn = !isOn; 
+      }
+    }    
+  }
+}
 
 // ===============================
 // Send Current Data to Server

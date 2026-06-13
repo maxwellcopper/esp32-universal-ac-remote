@@ -156,12 +156,12 @@ void IrRemoteHandler::sendSignal() {
     return;
   }
 
-  Serial.print("Mengirim ["); Serial.print(protoName);
-  Serial.print("] P="); Serial.print(acState.power ? "ON" : "OFF");
-  Serial.print(" T="); Serial.print(acState.degrees);
-  Serial.print(" M="); Serial.print(IRac::opmodeToString(acState.mode));
-  Serial.print(" F="); Serial.print(IRac::fanspeedToString(acState.fanspeed));
-  Serial.print(" SV="); Serial.println(IRac::swingvToString(acState.swingv));
+  // Serial.print("Mengirim ["); Serial.print(protoName);
+  // Serial.print("] P="); Serial.print(acState.power ? "ON" : "OFF");
+  // Serial.print(" T="); Serial.print(acState.degrees);
+  // Serial.print(" M="); Serial.print(IRac::opmodeToString(acState.mode));
+  // Serial.print(" F="); Serial.print(IRac::fanspeedToString(acState.fanspeed));
+  // Serial.print(" SV="); Serial.println(IRac::swingvToString(acState.swingv));
 
   // Kirim - IRac otomatis handle checksum & format semua merk
   stdAc::state_t* prev = prevStateValid ? &acPrevState : nullptr;
