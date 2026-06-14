@@ -93,10 +93,9 @@ void IrRemoteHandler::init() {
   else {
     scanMode = false;
     Serial.print("protocol :");
-    Serial.println(protoName);
-    Serial.print("model :");
+    Serial.print(protoName);
+    Serial.print("|| model : ");
     Serial.println(acState.model);
-    printHelp();
   }
 
   printStatus();
@@ -152,16 +151,16 @@ void IrRemoteHandler::sendSignal() {
     return;
   }
   if (!ac.isProtocolSupported(acState.protocol)) {
-    Serial.println("❌ Protocol tidak didukung IRac: " + protoName);
+    Serial.println("err: protocol not supported:" + protoName);
     return;
   }
 
-  // Serial.print("Mengirim ["); Serial.print(protoName);
-  // Serial.print("] P="); Serial.print(acState.power ? "ON" : "OFF");
-  // Serial.print(" T="); Serial.print(acState.degrees);
-  // Serial.print(" M="); Serial.print(IRac::opmodeToString(acState.mode));
-  // Serial.print(" F="); Serial.print(IRac::fanspeedToString(acState.fanspeed));
-  // Serial.print(" SV="); Serial.println(IRac::swingvToString(acState.swingv));
+  Serial.print("Mengirim ["); Serial.print(protoName);
+  Serial.print("] P="); Serial.print(acState.power ? "ON" : "OFF");
+  Serial.print(" T="); Serial.print(acState.degrees);
+  Serial.print(" M="); Serial.print(IRac::opmodeToString(acState.mode));
+  Serial.print(" F="); Serial.print(IRac::fanspeedToString(acState.fanspeed));
+  Serial.print(" SV="); Serial.println(IRac::swingvToString(acState.swingv));
 
   // Kirim - IRac otomatis handle checksum & format semua merk
   stdAc::state_t* prev = prevStateValid ? &acPrevState : nullptr;
@@ -170,15 +169,14 @@ void IrRemoteHandler::sendSignal() {
   acPrevState    = acState;
   prevStateValid = true;
 
-  Serial.println("✓ Terkirim!");
+  Serial.println("Terkirim");
   saveToFlash();
-  printStatus();
 }
 
 // ========== PROSES SCAN ==========
 void IrRemoteHandler::processScanResult() {
-  if (results.repeat) { Serial.println("⚠ Repeat, coba lagi..."); return; }
-  if (results.rawlen < 10) { Serial.println("⚠ Sinyal pendek..."); return; }
+  if (results.repeat) { Serial.println("Repeat, coba lagi..."); return; }
+  if (results.rawlen < 10) { Serial.println("Sinyal pendek..."); return; }
 
   decode_type_t proto = results.decode_type;
 
@@ -195,12 +193,12 @@ void IrRemoteHandler::processScanResult() {
   Serial.println();
 #endif
   if (!hasACState(proto)) {
-    Serial.println("⚠ Bukan AC protocol! Coba lagi...");
+    Serial.println("err: not AC Protocol, Try Again!...");
     return;
   }
 
   if (!ac.isProtocolSupported(proto)) {
-    Serial.println("⚠ Protocol tidak didukung IRac: " + typeToString(proto, false));
+    Serial.println("err: protocol not supported " + typeToString(proto, false));
     return;
   }
 
@@ -211,7 +209,7 @@ void IrRemoteHandler::processScanResult() {
 
   // Decode langsung ke stdAc::state_t
   if (IRAcUtils::decodeToState(&results, &acState, nullptr)) {
-    Serial.println("✓ State decoded!");
+    Serial.println("State decoded");
   } else {
     // Fallback: set protocol & model saja
     acState.protocol = proto;
@@ -229,13 +227,10 @@ void IrRemoteHandler::processScanResult() {
   scanMode       = false;
   saveToFlash();
 
-  Serial.println("✓ Scan selesai!");
-  Serial.println("✓ Protocol : " + protoName);
-  Serial.println("✓ Model    : " + String(acState.model));
-  printHelp();
-  printStatus();
+  Serial.println("Scanned!");
+  Serial.print("Protocol : " + protoName);
+  Serial.println(" || Model : " + String(acState.model));
   ESP.restart(); //restart after get right remote 
-
 }
 
 // ========== PROSES COMMAND ==========
@@ -300,11 +295,11 @@ void IrRemoteHandler::processCommand(String cmd) {
 
   } else if (c == "reset") {
     resetConfig();
-    Serial.println("✓ Reset! Ketik 'scan'");
+    Serial.println("Reset OK, Ketik 'scan'");
 
   } else if ( c == "wifi reset") wifiManager.resetWifi();
 
-  else Serial.println("Command tidak dikenal. Ketik 'help'");
+  else Serial.println("Command not found, type help");
 }
 
 
@@ -404,25 +399,25 @@ void IrRemoteHandler::printStatus() {
   Serial.print("Swing H  : "); Serial.println(IRac::swinghToString(acState.swingh));
   Serial.print("Turbo    : "); Serial.println(acState.turbo ? "ON" : "OFF");
   Serial.print("Econo    : "); Serial.println(acState.econo ? "ON" : "OFF");
-  Serial.print("Data     : "); Serial.println(stateLen > 0 ? "✓ Siap" : "✗ Belum scan");
+  Serial.print("Data     : "); Serial.println(stateLen > 0 ? "Siap" : "Belum scan");
   Serial.println("================================");
 }
 
 // ========== PRINT HELP ==========
 void IrRemoteHandler::printHelp() {
   Serial.println("=========== COMMAND ============");
-  Serial.println("scan             → scan remote");
-  Serial.println("power on/off     → nyala/mati");
-  Serial.println("temp 16-30       → set suhu");
+  Serial.println("scan : scan remote");
+  Serial.println("power on/off : nyala/mati");
+  Serial.println("temp 16-30 : set suhu");
   Serial.println("mode cool/heat/dry/fan/auto");
   Serial.println("fan auto/min/low/med/high/max");
-  Serial.println("swingv on/off    → swing vertikal");
-  Serial.println("swingh on/off    → swing horizontal");
-  Serial.println("turbo on/off     → turbo mode");
-  Serial.println("econo on/off     → econo mode");
-  Serial.println("send             → kirim ulang");
-  Serial.println("status           → lihat status");
-  Serial.println("reset            → hapus data");
-  Serial.println("help             → menu ini");
+  Serial.println("swingv on/off : wing vertikal");
+  Serial.println("swingh on/off : swing horizontal");
+  Serial.println("turbo on/off : turbo mode");
+  Serial.println("econo on/off : econo mode");
+  Serial.println("send : kirim ulang");
+  Serial.println("status : lihat status");
+  Serial.println("reset : hapus data");
+  Serial.println("help : menu ini");
   Serial.println("================================");
 }

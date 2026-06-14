@@ -35,7 +35,7 @@ void httpPostStatusHandler_s::startSend(){
     buildJsonPayload(dataJson);
 
     int ret = sendJsonPost(urlAddr, dataJson);
-    // Serial.print("post status ret: "); Serial.println(ret); //get http response 
+    Serial.print("post status ret: "); Serial.println(ret); //get http response 
 }
 
 void httpPostStatusHandler_s::buildJsonPayload(String &payloadJson){
@@ -76,7 +76,7 @@ void httpPostCurrentHandler_s::startSend(){
     buildJsonPayload(dataJson);
 
     int ret = sendJsonPost(urlAddr, dataJson);
-    // Serial.print("post current ret: "); Serial.println(ret); //get http response 
+    Serial.print("post current ret: "); Serial.println(ret); //get http response 
 }
 
 
