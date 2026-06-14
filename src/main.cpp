@@ -13,7 +13,6 @@ void setup()
   delay(1000);
 
   wifiManager.begin();
-  Serial.println("done setup");
   Serial.print("url : "); Serial.println(wifiManager.getServerBaseUrl());
 
   init_sct013(&sct013, SCT013_PIN);
@@ -22,12 +21,8 @@ void setup()
   postCurrent.init(wifiManager.getServerBaseUrl(), &sct013);
   postStatus.init(wifiManager.getServerBaseUrl(), irRemotegetAcState(), irRemotegetProtoName());
   getCommand.init(wifiManager.getServerBaseUrl(), irRemotegetAcState(), irRemotegetProtoName());
-
+  Serial.println("done setup");
 }
-
-#define POST_STATUS_INTERVAL    5000
-#define POST_CURRENT_INTERVAL   2000
-#define GET_COMMAND_INTERVAL    10000
 
 void loop()
 {

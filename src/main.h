@@ -17,6 +17,9 @@ httpGetCommandHandler_s getCommand;
 /*
 ***Utility Var n Proto Function
 */
+#define POST_STATUS_INTERVAL    5000
+#define POST_CURRENT_INTERVAL   2000
+#define GET_COMMAND_INTERVAL    10000
 uint32_t lastPostStatus = 0;
 uint32_t lastPostCurrent = 0;
 uint32_t lastBlinking = 0;
