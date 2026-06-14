@@ -194,3 +194,103 @@ Example JSON:
   "swingv": 0
 }
 ```
+
+---
+
+## AC State Definitions
+
+The device uses the common A/C state definitions provided by the IRremoteESP8266 library (`stdAc`). These values are used when sending or receiving AC commands through the HTTP API.
+
+### Operating Mode (`mode`)
+
+| Value | Enum  | Description           |
+| ----- | ----- | --------------------- |
+| -1    | kOff  | AC is turned off      |
+| 0     | kAuto | Automatic mode        |
+| 1     | kCool | Cooling mode          |
+| 2     | kHeat | Heating mode          |
+| 3     | kDry  | Dehumidification mode |
+| 4     | kFan  | Fan only mode         |
+
+Example:
+
+```json
+{
+  "mode": 1
+}
+```
+
+The example above sets the AC to **Cool Mode**.
+
+---
+
+### Fan Speed (`fan`)
+
+| Value | Enum        | Description         |
+| ----- | ----------- | ------------------- |
+| 0     | kAuto       | Automatic fan speed |
+| 1     | kMin        | Minimum speed       |
+| 2     | kLow        | Low speed           |
+| 3     | kMedium     | Medium speed        |
+| 4     | kHigh       | High speed          |
+| 5     | kMax        | Maximum speed       |
+| 6     | kMediumHigh | Medium-High speed   |
+
+Example:
+
+```json
+{
+  "fan": 4
+}
+```
+
+The example above sets the fan speed to **High**.
+
+---
+
+### Vertical Swing (`swingv`)
+
+| Value | Enum         | Description           |
+| ----- | ------------ | --------------------- |
+| -1    | kOff         | Swing disabled        |
+| 0     | kAuto        | Automatic swing       |
+| 1     | kHighest     | Highest position      |
+| 2     | kHigh        | High position         |
+| 3     | kMiddle      | Middle position       |
+| 4     | kLow         | Low position          |
+| 5     | kLowest      | Lowest position       |
+| 6     | kUpperMiddle | Upper-middle position |
+
+Example:
+
+```json
+{
+  "swingv": 0
+}
+```
+
+The example above enables **Automatic Vertical Swing**.
+
+---
+
+### Complete Command Example
+
+```json
+{
+  "power": true,
+  "temp": 24,
+  "mode": 1,
+  "fan": 3,
+  "swingv": 0
+}
+```
+
+This command will:
+
+* Turn the AC ON
+* Set temperature to 24°C
+* Set operating mode to Cool
+* Set fan speed to Medium
+* Enable automatic vertical swing
+
+**Note :** Actual supported modes, fan speeds, and swing positions depend on the AC brand and protocol. Unsupported values may be ignored or automatically mapped to the closest supported setting by the IR library.
